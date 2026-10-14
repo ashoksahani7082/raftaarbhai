@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Download Our App</title>
+  <meta name="description" content="Download the official Android app.">
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#0b1020;color:#f8fafc;font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+    main{width:min(100%,480px);padding:32px;border:1px solid #273449;border-radius:24px;background:linear-gradient(145deg,#141d31,#101626);box-shadow:0 24px 80px #0005;text-align:center}
+    .mark{width:64px;height:64px;margin:0 auto 18px;border-radius:18px;display:grid;place-items:center;background:#2563eb;font-size:28px;font-weight:800}
+    h1{font-size:clamp(26px,6vw,36px);line-height:1.15;margin:0 0 12px}p{color:#b8c4d8;margin:0 0 24px}
+    a{display:block;padding:15px 20px;border-radius:12px;background:#3b82f6;color:white;text-decoration:none;font-weight:750}
+    small{display:block;margin-top:16px;color:#91a0b8;font-size:12px}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark">A</div>
+    <h1>Get the Android App</h1>
+    <p>Download the official APK and follow the in-app instructions to create your account.</p>
+    <a id="download" href="#" rel="nofollow">Continue to APK Download</a>
+    <small>Use the official download link only. Attribution is used to measure campaign performance.</small>
+  </main>
+  <script>
+    // Configure APK_DOWNLOAD_URL before launch.
+    const APK_DOWNLOAD_URL = "";
+    const button = document.getElementById("download");
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      if (!APK_DOWNLOAD_URL) {
+        alert("APK download URL is not configured yet. Add APK_DOWNLOAD_URL in index.html.");
+        return;
+      }
+      const qs = new URLSearchParams(location.search);
+      const cookie = (name) => document.cookie.split("; ").find(x => x.startsWith(name + "="))?.split("=").slice(1).join("=") || "";
+      const fbclid = qs.get("fbclid") || "";
+      const fbp = cookie("_fbp");
+      const fbc = cookie("_fbc") || (fbclid ? "fb.1." + Date.now() + "." + fbclid : "");
+      try {
+        const response = await fetch("/api/create-attribution", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            fbclid, fbp, fbc,
+            utm_source:qs.get("utm_source") || "",
+            utm_campaign:qs.get("utm_campaign") || "",
+            utm_medium:qs.get("utm_medium") || "",
+            utm_content:qs.get("utm_content") || ""
+          })
+        });
+        if (!response.ok) throw new Error("Attribution API failed");
+        const data = await response.json();
+        // Keep the token in the download URL for download-level analytics only.
+        // This does NOT by itself defer attribution through install; the Android
+        // app must implement a supported handoff/deferred-link solution.
+        const target = new URL(APK_DOWNLOAD_URL);
+        target.searchParams.set("attr_id", data.attributionId);
+        location.href = target.toString();
+      } catch (error) {
+        console.error(error);
+        // Do not block a legitimate download if attribution storage is unavailable.
+        location.href = APK_DOWNLOAD_URL;
+      }
+    });
+  </script>
+</body>
+</html>
