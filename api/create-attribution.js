@@ -13,6 +13,7 @@ export default async function handler(req, res) {
   const redisUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const redisToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!redisUrl || !redisToken) {
+    console.error("create-attribution configuration missing: Redis REST URL or token is not set");
     return res.status(500).json({ error: "Redis/KV is not configured" });
   }
 
@@ -40,6 +41,8 @@ export default async function handler(req, res) {
     });
     if (!saved.ok) throw new Error("Redis write failed");
 
+    // Safe operational log: do not log tokens, click IDs, or personal data.
+    console.log("create-attribution success");
     return res.status(200).json({ attributionId });
   } catch (error) {
     console.error("create-attribution failed", error.message);
